@@ -30,9 +30,29 @@ class TestHelpdeskTicketPulseway(TransactionCase):
                 "ip_address": "10.0.0.5",
             }
         )
-        cls.team = cls.env["helpdesk.team"].search([], limit=1)
-        if not cls.team:
-            cls.team = cls.env["helpdesk.team"].create({"name": "Test Team"})
+        # Create a dedicated test team with explicit stages and no auto-
+        # assignment so that ticket creation is deterministic and does not
+        # depend on demo data or resource-calendar availability.
+        cls.team = cls.env["helpdesk.team"].with_context(
+            mail_create_nolog=True,
+            mail_create_nosubscribe=True,
+        ).create({
+            "name": "Pulseway Test Team",
+            "member_ids": cls.env.user.ids,
+            "auto_assignment": False,
+            "use_sla": False,
+        })
+        cls.stage_new = cls.env["helpdesk.stage"].create({
+            "name": "New",
+            "sequence": 10,
+            "team_ids": [(4, cls.team.id)],
+        })
+        cls.stage_done = cls.env["helpdesk.stage"].create({
+            "name": "Done",
+            "sequence": 30,
+            "team_ids": [(4, cls.team.id)],
+            "fold": True,
+        })
 
     def _create_ticket(self, **overrides):
         vals = {
