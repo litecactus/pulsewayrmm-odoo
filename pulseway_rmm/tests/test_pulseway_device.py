@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
+from odoo.tools import mute_logger
 
 
 SAMPLE_DEVICE_RAW = {
@@ -50,6 +51,7 @@ class TestPulsewayDevice(TransactionCase):
         self.assertEqual(device.name, "Test Device")
         self.assertEqual(device.pulseway_id, "test-id-001")
 
+    @mute_logger("odoo.sql_db")
     def test_unique_pulseway_id(self):
         self._create_device(pulseway_id="unique-constraint-test")
         with self.assertRaises(Exception), self.env.cr.savepoint():
