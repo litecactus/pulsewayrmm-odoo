@@ -29,10 +29,10 @@ class TestPulsewayDevice(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         ICP = cls.env["ir.config_parameter"].sudo()
-        ICP.set_param("pulseway_rmm.api_url", "https://api.pulseway.com/v3")
-        ICP.set_param("pulseway_rmm.token_id", "test-token-id")
-        ICP.set_param("pulseway_rmm.token_secret", "test-token-secret")
-        ICP.set_param("pulseway_rmm.webapp_url", "https://my.pulseway.com")
+        ICP.set_str("pulseway_rmm.api_url", "https://api.pulseway.com/v3")
+        ICP.set_str("pulseway_rmm.token_id", "test-token-id")
+        ICP.set_str("pulseway_rmm.token_secret", "test-token-secret")
+        ICP.set_str("pulseway_rmm.webapp_url", "https://my.pulseway.com")
 
     def _create_device(self, **overrides):
         vals = {
@@ -73,7 +73,7 @@ class TestPulsewayDevice(TransactionCase):
         self.assertIn("id%20with%20spaces%2Fslashes", device.remote_control_url)
 
     def test_remote_control_url_without_webapp(self):
-        self.env["ir.config_parameter"].sudo().set_param(
+        self.env["ir.config_parameter"].sudo().set_str(
             "pulseway_rmm.webapp_url", ""
         )
         device = self._create_device(pulseway_id="no-webapp-device")

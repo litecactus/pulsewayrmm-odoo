@@ -79,7 +79,7 @@ class PulsewayDevice(models.Model):
     @api.depends("pulseway_id")
     def _compute_remote_control_url(self):
         ICP = self.env["ir.config_parameter"].sudo()
-        webapp_url = (ICP.get_param("pulseway_rmm.webapp_url") or "").rstrip("/")
+        webapp_url = (ICP.get_str("pulseway_rmm.webapp_url") or "").rstrip("/")
         for rec in self:
             if webapp_url and rec.pulseway_id:
                 safe_id = quote(str(rec.pulseway_id), safe="")

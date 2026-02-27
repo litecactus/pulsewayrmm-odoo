@@ -13,13 +13,13 @@ class TestHelpdeskTicketPulseway(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         ICP = cls.env["ir.config_parameter"].sudo()
-        ICP.set_param("pulseway_rmm.api_url", "https://api.pulseway.com/v3")
-        ICP.set_param("pulseway_rmm.token_id", "test-token-id")
-        ICP.set_param("pulseway_rmm.token_secret", "test-token-secret")
-        ICP.set_param("pulseway_rmm.webapp_url", "https://my.pulseway.com")
+        ICP.set_str("pulseway_rmm.api_url", "https://api.pulseway.com/v3")
+        ICP.set_str("pulseway_rmm.token_id", "test-token-id")
+        ICP.set_str("pulseway_rmm.token_secret", "test-token-secret")
+        ICP.set_str("pulseway_rmm.webapp_url", "https://my.pulseway.com")
 
         # Give the test user the Pulseway group so refresh works
-        cls.env.user.groups_id += cls.env.ref("pulseway_rmm.group_pulseway_user")
+        cls.env.user.group_ids += cls.env.ref("pulseway_rmm.group_pulseway_user")
 
         cls.device = cls.env["pulseway.device"].create(
             {
