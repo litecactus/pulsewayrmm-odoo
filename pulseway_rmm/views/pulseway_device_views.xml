@@ -91,7 +91,7 @@
                 <filter name="offline" string="Offline" domain="[('online', '=', False)]"/>
                 <separator/>
                 <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
-                <group expand="0" string="Group By">
+                <group string="Group By">
                     <filter name="group_by_os" string="OS" context="{'group_by': 'os_name'}"/>
                     <filter name="group_by_group" string="Group" context="{'group_by': 'group_name'}"/>
                     <filter name="group_by_org" string="Organization" context="{'group_by': 'organization_name'}"/>
