@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_inherit_pulseway" model="ir.ui.view">
+        <field name="name">res.config.settings.pulseway</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Pulseway RMM" string="Pulseway RMM">
+                    <block title="API Connection">
+                        <setting string="Pulseway API Credentials"
+                                 help="Enter your Pulseway REST API v3 credentials. Create tokens in Pulseway at Administration > Configuration > API Access.">
+                            <div class="content-group">
+                                <div class="row mt16">
+                                    <label for="pulseway_api_url" class="col-3 o_light_label"/>
+                                    <field name="pulseway_api_url" class="col-5"/>
+                                </div>
+                                <div class="row">
+                                    <label for="pulseway_token_id" class="col-3 o_light_label"/>
+                                    <field name="pulseway_token_id" class="col-5"/>
+                                </div>
+                                <div class="row">
+                                    <label for="pulseway_token_secret" class="col-3 o_light_label"/>
+                                    <field name="pulseway_token_secret" class="col-5" password="True"/>
+                                </div>
+                            </div>
+                        </setting>
+                        <setting string="Web Dashboard URL"
+                                 help="Used to construct remote control links.">
+                            <div class="content-group">
+                                <div class="row mt16">
+                                    <label for="pulseway_webapp_url" class="col-3 o_light_label"/>
+                                    <field name="pulseway_webapp_url" class="col-5"/>
+                                </div>
+                            </div>
+                        </setting>
+                        <setting>
+                            <div class="mt16">
+                                <button name="action_pulseway_test_connection"
+                                        string="Test Connection"
+                                        type="object"
+                                        class="btn-primary"
+                                        icon="fa-plug"/>
+                            </div>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

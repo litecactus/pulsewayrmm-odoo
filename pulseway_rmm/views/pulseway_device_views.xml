@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="pulseway_device_view_list" model="ir.ui.view">
+        <field name="name">pulseway.device.list</field>
+        <field name="model">pulseway.device</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="os_name"/>
+                <field name="ip_address"/>
+                <field name="group_name"/>
+                <field name="organization_name"/>
+                <field name="online" widget="boolean_toggle" readonly="1"/>
+                <field name="last_seen"/>
+                <field name="ticket_count" string="Tickets"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="pulseway_device_view_form" model="ir.ui.view">
+        <field name="name">pulseway.device.form</field>
+        <field name="model">pulseway.device</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_open_remote_control"
+                            string="Remote Control"
+                            type="object"
+                            class="oe_highlight"
+                            icon="fa-desktop"
+                            invisible="not remote_control_url"/>
+                    <button name="action_refresh_device"
+                            string="Refresh"
+                            type="object"
+                            icon="fa-refresh"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_tickets"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-ticket">
+                            <field name="ticket_count" widget="statinfo" string="Tickets"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon"
+                            title="Offline"
+                            bg_color="text-bg-danger"
+                            invisible="online"/>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Device Name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Device Info">
+                            <field name="pulseway_id" readonly="1"/>
+                            <field name="os_name"/>
+                            <field name="os_version"/>
+                            <field name="ip_address"/>
+                            <field name="remote_address"/>
+                        </group>
+                        <group string="Organization">
+                            <field name="organization_name"/>
+                            <field name="site_name"/>
+                            <field name="group_name"/>
+                            <field name="online"/>
+                            <field name="last_seen"/>
+                            <field name="last_sync"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="pulseway_device_view_search" model="ir.ui.view">
+        <field name="name">pulseway.device.search</field>
+        <field name="model">pulseway.device</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="ip_address"/>
+                <field name="os_name"/>
+                <field name="group_name"/>
+                <field name="organization_name"/>
+                <filter name="online" string="Online" domain="[('online', '=', True)]"/>
+                <filter name="offline" string="Offline" domain="[('online', '=', False)]"/>
+                <separator/>
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_by_os" string="OS" context="{'group_by': 'os_name'}"/>
+                    <filter name="group_by_group" string="Group" context="{'group_by': 'group_name'}"/>
+                    <filter name="group_by_org" string="Organization" context="{'group_by': 'organization_name'}"/>
+                    <filter name="group_by_online" string="Status" context="{'group_by': 'online'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="pulseway_device_action" model="ir.actions.act_window">
+        <field name="name">Devices</field>
+        <field name="res_model">pulseway.device</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="pulseway_device_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No devices synced yet.
+            </p>
+            <p>
+                Configure your Pulseway API credentials in Settings, then
+                devices will sync automatically every hour.
+            </p>
+        </field>
+    </record>
+</odoo>

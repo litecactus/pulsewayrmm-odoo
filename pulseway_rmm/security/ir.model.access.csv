@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pulseway_device_user,pulseway.device.user,model_pulseway_device,pulseway_rmm.group_pulseway_user,1,0,0,0
+access_pulseway_device_admin,pulseway.device.admin,model_pulseway_device,pulseway_rmm.group_pulseway_admin,1,1,1,1
+access_pulseway_api_user,pulseway.api.user,model_pulseway_api,pulseway_rmm.group_pulseway_user,1,0,0,0

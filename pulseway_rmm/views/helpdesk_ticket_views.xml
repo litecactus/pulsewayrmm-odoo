@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extend ticket form to add device fields and remote control -->
+    <record id="helpdesk_ticket_view_form_inherit_pulseway" model="ir.ui.view">
+        <field name="name">helpdesk.ticket.form.pulseway</field>
+        <field name="model">helpdesk.ticket</field>
+        <field name="inherit_id" ref="helpdesk.helpdesk_ticket_view_form"/>
+        <field name="arch" type="xml">
+            <!-- Add remote control button in the header -->
+            <xpath expr="//header" position="inside">
+                <button name="action_remote_control"
+                        string="Remote Control"
+                        type="object"
+                        class="oe_highlight"
+                        icon="fa-desktop"
+                        invisible="not pulseway_device_id"/>
+                <button name="action_refresh_device"
+                        string="Refresh Device"
+                        type="object"
+                        icon="fa-refresh"
+                        invisible="not pulseway_device_id"/>
+            </xpath>
+            <!-- Add device fields after the existing sheet content -->
+            <xpath expr="//sheet" position="inside">
+                <group string="Pulseway Device">
+                    <group>
+                        <field name="pulseway_device_id"/>
+                        <field name="device_online" widget="boolean_toggle"
+                               readonly="1"
+                               invisible="not pulseway_device_id"/>
+                    </group>
+                    <group>
+                        <field name="device_os"
+                               invisible="not pulseway_device_id"/>
+                        <field name="device_ip"
+                               invisible="not pulseway_device_id"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extend ticket list to show device and status -->
+    <record id="helpdesk_ticket_view_list_inherit_pulseway" model="ir.ui.view">
+        <field name="name">helpdesk.ticket.list.pulseway</field>
+        <field name="model">helpdesk.ticket</field>
+        <field name="inherit_id" ref="helpdesk.helpdesk_ticket_view_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="pulseway_device_id" optional="show"/>
+                <field name="device_online" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Top-level menu under Helpdesk -->
+    <menuitem id="menu_pulseway_root"
+              name="Pulseway RMM"
+              parent="helpdesk.helpdesk_menu_root"
+              sequence="40"/>
+
+    <menuitem id="menu_pulseway_devices"
+              name="Devices"
+              parent="menu_pulseway_root"
+              action="pulseway_device_action"
+              sequence="10"/>
+</odoo>

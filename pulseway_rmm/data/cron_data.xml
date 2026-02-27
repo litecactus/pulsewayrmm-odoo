@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_cron_pulseway_sync_devices" model="ir.cron">
+        <field name="name">Pulseway: Sync Devices</field>
+        <field name="model_id" ref="model_pulseway_device"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_sync_devices()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
+</odoo>
