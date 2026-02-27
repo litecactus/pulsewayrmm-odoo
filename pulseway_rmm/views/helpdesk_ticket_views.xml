@@ -40,17 +40,4 @@
             </xpath>
         </field>
     </record>
-
-    <!-- Extend ticket list to show device and status -->
-    <record id="helpdesk_ticket_view_list_inherit_pulseway" model="ir.ui.view">
-        <field name="name">helpdesk.ticket.list.pulseway</field>
-        <field name="model">helpdesk.ticket</field>
-        <field name="inherit_id" ref="helpdesk.helpdesk_ticket_view_list"/>
-        <field name="arch" type="xml">
-            <xpath expr="//list" position="inside">
-                <field name="pulseway_device_id" optional="show"/>
-                <field name="device_online" optional="hide"/>
-            </xpath>
-        </field>
-    </record>
 </odoo>
