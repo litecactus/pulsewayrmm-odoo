@@ -2,9 +2,11 @@
 
 from unittest.mock import MagicMock, patch
 
+from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 
+@tagged("post_install", "-at_install")
 class TestHelpdeskTicketPulseway(TransactionCase):
 
     @classmethod
@@ -16,6 +18,9 @@ class TestHelpdeskTicketPulseway(TransactionCase):
         ICP.set_param("pulseway_rmm.token_secret", "test-token-secret")
         ICP.set_param("pulseway_rmm.webapp_url", "https://my.pulseway.com")
 
+        # Give the test user the Pulseway group so refresh works
+        cls.env.user.groups_id += cls.env.ref("pulseway_rmm.group_pulseway_user")
+
         cls.device = cls.env["pulseway.device"].create(
             {
                 "name": "Test Workstation",
@@ -25,7 +30,6 @@ class TestHelpdeskTicketPulseway(TransactionCase):
                 "ip_address": "10.0.0.5",
             }
         )
-        # Helpdesk team is required for ticket creation in v19
         cls.team = cls.env["helpdesk.team"].search([], limit=1)
         if not cls.team:
             cls.team = cls.env["helpdesk.team"].create({"name": "Test Team"})
@@ -85,5 +89,6 @@ class TestHelpdeskTicketPulseway(TransactionCase):
 
         ticket = self._create_ticket()
         ticket.action_refresh_device()
+        self.device.invalidate_recordset()
         self.assertEqual(self.device.name, "Updated Workstation")
         self.assertFalse(self.device.online)

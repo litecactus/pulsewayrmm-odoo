@@ -34,7 +34,8 @@
                     <button name="action_refresh_device"
                             string="Refresh"
                             type="object"
-                            icon="fa-refresh"/>
+                            icon="fa-refresh"
+                            groups="pulseway_rmm.group_pulseway_user"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">

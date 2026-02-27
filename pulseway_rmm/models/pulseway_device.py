@@ -1,7 +1,7 @@
 """Pulseway device model — synced from the RMM API."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from odoo import _, api, fields, models
 
@@ -105,11 +105,25 @@ class PulsewayDevice(models.Model):
         }
 
     def action_refresh_device(self):
-        """Fetch fresh data for this single device from Pulseway."""
+        """Fetch fresh data for this single device from Pulseway.
+
+        Uses sudo() for the write so read-only Pulseway users can trigger
+        a refresh. The API call itself is safe (read-only GET).
+        """
         self.ensure_one()
+        self._check_pulseway_group()
         api_client = self.env["pulseway.api"]
         raw = api_client.get_device(self.pulseway_id)
-        self._update_from_api(raw)
+        if not raw:
+            return
+        self.sudo()._update_from_api(raw)
+
+    def _check_pulseway_group(self):
+        """Raise AccessError if the user has no Pulseway group."""
+        if not self.env.su and not self.env.user.has_group(
+            "pulseway_rmm.group_pulseway_user"
+        ):
+            raise self.env["ir.rule"]._make_access_error("read", self)
 
     # ------------------------------------------------------------------
     # Sync logic
@@ -122,24 +136,51 @@ class PulsewayDevice(models.Model):
         try:
             raw_devices = api_client.get_devices()
         except Exception:
-            _logger.exception("Pulseway device sync failed")
+            _logger.exception("Pulseway device sync failed: could not fetch devices")
             return
 
         _logger.info("Pulseway sync: received %d devices", len(raw_devices))
-        existing = {
-            d.pulseway_id: d
-            for d in self.search([("pulseway_id", "in", [r.get("Identifier") for r in raw_devices])])
-        }
 
+        # Deduplicate by Identifier (last occurrence wins)
+        seen_ids = {}
         for raw in raw_devices:
             identifier = raw.get("Identifier")
-            if not identifier:
-                continue
-            device = existing.get(identifier)
-            if device:
-                device._update_from_api(raw)
-            else:
-                self._create_from_api(raw)
+            if identifier:
+                seen_ids[identifier] = raw
+        raw_devices = list(seen_ids.values())
+
+        # Include archived devices so we don't try to recreate them
+        existing = {
+            d.pulseway_id: d
+            for d in self.with_context(active_test=False).search(
+                [("pulseway_id", "in", list(seen_ids.keys()))]
+            )
+        }
+
+        synced = 0
+        failed = 0
+        for raw in raw_devices:
+            identifier = raw.get("Identifier")
+            try:
+                with self.env.cr.savepoint():
+                    device = existing.get(identifier)
+                    if device:
+                        if not device.active:
+                            device.active = True
+                        device._update_from_api(raw)
+                    else:
+                        self._create_from_api(raw)
+                    synced += 1
+            except Exception:
+                failed += 1
+                _logger.exception("Pulseway sync: failed to sync device %s", identifier)
+
+        if failed:
+            _logger.warning(
+                "Pulseway sync complete: %d synced, %d failed", synced, failed
+            )
+        else:
+            _logger.info("Pulseway sync complete: %d devices synced", synced)
 
     def _update_from_api(self, raw):
         """Update an existing device record from API response dict."""
@@ -171,10 +212,9 @@ class PulsewayDevice(models.Model):
         last_seen = raw.get("LastSeen")
         if last_seen and isinstance(last_seen, str):
             try:
-                # Strip timezone to produce a naive-UTC datetime (Odoo convention)
-                last_seen = datetime.fromisoformat(
-                    last_seen.replace("Z", "+00:00")
-                ).replace(tzinfo=None)
+                # Parse and convert to naive-UTC datetime (Odoo convention)
+                dt = datetime.fromisoformat(last_seen.replace("Z", "+00:00"))
+                last_seen = dt.astimezone(timezone.utc).replace(tzinfo=None)
             except (ValueError, TypeError):
                 last_seen = False
 

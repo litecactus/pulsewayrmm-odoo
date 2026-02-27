@@ -31,7 +31,8 @@ class ResConfigSettings(models.TransientModel):
 
     def action_pulseway_test_connection(self):
         """Test the Pulseway API connection with current settings."""
-        # Save first so _get_credentials reads fresh values
+        # Persist current form values so _get_credentials reads them
+        self.set_values()
         self.env["pulseway.api"].test_connection()
         return {
             "type": "ir.actions.client",

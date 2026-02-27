@@ -6,6 +6,8 @@ making requests directly.
 """
 
 import logging
+import time
+from urllib.parse import quote
 
 import requests
 from odoo import _, api, models
@@ -15,6 +17,8 @@ _logger = logging.getLogger(__name__)
 
 TIMEOUT = 30  # seconds
 PAGE_SIZE = 100  # Pulseway v3 max $top
+MAX_PAGES = 200  # safety cap: 20 000 devices
+PAGE_DELAY = 1.1  # seconds between paginated requests (stay under 60 req/min)
 
 
 class PulsewayApi(models.AbstractModel):
@@ -67,13 +71,24 @@ class PulsewayApi(models.AbstractModel):
         except requests.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else "N/A"
             raise UserError(
-                _("Pulseway API error (HTTP %s): %s", status, exc)
+                _(
+                    "Pulseway API error (HTTP %s). "
+                    "Check credentials and API URL.",
+                    status,
+                )
             )
         except requests.Timeout:
             raise UserError(
                 _("Pulseway API request timed out after %s seconds.", TIMEOUT)
             )
-        return resp.json() if resp.content else {}
+        except requests.RequestException:
+            raise UserError(_("Pulseway API request failed unexpectedly."))
+        try:
+            return resp.json() if resp.content else {}
+        except ValueError:
+            raise UserError(
+                _("Pulseway API returned an invalid (non-JSON) response.")
+            )
 
     # ------------------------------------------------------------------
     # Public API methods
@@ -90,10 +105,14 @@ class PulsewayApi(models.AbstractModel):
 
     @api.model
     def get_devices(self):
-        """Fetch **all** devices, handling OData pagination automatically."""
+        """Fetch **all** devices, handling OData pagination automatically.
+
+        Includes a delay between pages to respect the 60 req/min rate limit,
+        and caps at ``MAX_PAGES`` to prevent infinite loops.
+        """
         devices = []
         skip = 0
-        while True:
+        for _page in range(MAX_PAGES):
             data = self._request(
                 "GET",
                 "/devices",
@@ -104,16 +123,26 @@ class PulsewayApi(models.AbstractModel):
             if len(batch) < PAGE_SIZE:
                 break
             skip += PAGE_SIZE
+            time.sleep(PAGE_DELAY)
+        else:
+            _logger.warning(
+                "Pulseway sync hit page limit (%d pages / %d devices). "
+                "Some devices may not have been synced.",
+                MAX_PAGES,
+                len(devices),
+            )
         return devices
 
     @api.model
     def get_device(self, device_id):
         """Fetch a single device by its Pulseway identifier."""
-        data = self._request("GET", f"/devices/{device_id}")
-        return data.get("Data") or data
+        safe_id = quote(str(device_id), safe="")
+        data = self._request("GET", f"/devices/{safe_id}")
+        return data.get("Data") or {}
 
     @api.model
     def get_device_notifications(self, device_id):
         """Fetch recent notifications for a device."""
-        data = self._request("GET", f"/devices/{device_id}/notifications")
+        safe_id = quote(str(device_id), safe="")
+        data = self._request("GET", f"/devices/{safe_id}/notifications")
         return data.get("Data") or []

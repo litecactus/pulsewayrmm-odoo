@@ -1,7 +1,8 @@
 """Tests for the pulseway.device model."""
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 
@@ -20,6 +21,7 @@ SAMPLE_DEVICE_RAW = {
 }
 
 
+@tagged("post_install", "-at_install")
 class TestPulsewayDevice(TransactionCase):
 
     @classmethod
@@ -65,12 +67,11 @@ class TestPulsewayDevice(TransactionCase):
         )
 
     def test_remote_control_url_without_webapp(self):
-        ICP = self.env["ir.config_parameter"].sudo()
-        ICP.set_param("pulseway_rmm.webapp_url", "")
+        self.env["ir.config_parameter"].sudo().set_param(
+            "pulseway_rmm.webapp_url", ""
+        )
         device = self._create_device(pulseway_id="no-webapp-device")
         self.assertFalse(device.remote_control_url)
-        # restore
-        ICP.set_param("pulseway_rmm.webapp_url", "https://my.pulseway.com")
 
     def test_ticket_count(self):
         device = self._create_device()
@@ -86,6 +87,16 @@ class TestPulsewayDevice(TransactionCase):
         self.assertEqual(vals["os_name"], "Windows 11 Pro")
         self.assertTrue(vals["online"])
         self.assertIsNotNone(vals["last_sync"])
+
+    def test_prepare_vals_missing_name_uses_identifier(self):
+        raw = {"Identifier": "abc-123"}
+        vals = self.env["pulseway.device"]._prepare_vals(raw)
+        self.assertEqual(vals["name"], "abc-123")
+
+    def test_prepare_vals_missing_everything(self):
+        vals = self.env["pulseway.device"]._prepare_vals({})
+        self.assertEqual(vals["name"], "Unknown")
+        self.assertFalse(vals["online"])
 
     def test_create_from_api(self):
         device = self.env["pulseway.device"]._create_from_api(SAMPLE_DEVICE_RAW)
@@ -104,9 +115,6 @@ class TestPulsewayDevice(TransactionCase):
     @patch("odoo.addons.pulseway_rmm.models.pulseway_api.requests.request")
     def test_cron_sync_creates_and_updates(self, mock_request):
         """Full sync: creates new devices and updates existing ones."""
-        from unittest.mock import MagicMock
-
-        # Pre-create one device that will be updated
         self._create_device(pulseway_id="aaaa-bbbb-cccc-dddd", name="Old Name")
 
         mock_resp = MagicMock()
@@ -115,11 +123,7 @@ class TestPulsewayDevice(TransactionCase):
         mock_resp.json.return_value = {
             "Data": [
                 SAMPLE_DEVICE_RAW,
-                {
-                    "Identifier": "new-device-id",
-                    "Name": "NEW-SERVER",
-                    "Online": True,
-                },
+                {"Identifier": "new-device-id", "Name": "NEW-SERVER", "Online": True},
             ]
         }
         mock_resp.raise_for_status = MagicMock()
@@ -127,18 +131,62 @@ class TestPulsewayDevice(TransactionCase):
 
         self.env["pulseway.device"].cron_sync_devices()
 
-        # Existing device updated
         existing = self.env["pulseway.device"].search(
             [("pulseway_id", "=", "aaaa-bbbb-cccc-dddd")]
         )
         self.assertEqual(existing.name, "WORKSTATION-01")
 
-        # New device created
         new_dev = self.env["pulseway.device"].search(
             [("pulseway_id", "=", "new-device-id")]
         )
         self.assertTrue(new_dev)
         self.assertEqual(new_dev.name, "NEW-SERVER")
+
+    @patch("odoo.addons.pulseway_rmm.models.pulseway_api.requests.request")
+    def test_cron_sync_reactivates_archived_device(self, mock_request):
+        """Archived device is reactivated when it reappears in the API."""
+        device = self._create_device(
+            pulseway_id="archived-dev", name="Archived", active=False
+        )
+        self.assertFalse(device.active)
+
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"x"
+        mock_resp.json.return_value = {
+            "Data": [
+                {"Identifier": "archived-dev", "Name": "Alive Again", "Online": True}
+            ]
+        }
+        mock_resp.raise_for_status = MagicMock()
+        mock_request.return_value = mock_resp
+
+        self.env["pulseway.device"].cron_sync_devices()
+        device.invalidate_recordset()
+        self.assertTrue(device.active)
+        self.assertEqual(device.name, "Alive Again")
+
+    @patch("odoo.addons.pulseway_rmm.models.pulseway_api.requests.request")
+    def test_cron_sync_deduplicates_identifiers(self, mock_request):
+        """Duplicate Identifiers in API response are deduplicated."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"x"
+        mock_resp.json.return_value = {
+            "Data": [
+                {"Identifier": "dup-001", "Name": "First", "Online": True},
+                {"Identifier": "dup-001", "Name": "Second", "Online": False},
+            ]
+        }
+        mock_resp.raise_for_status = MagicMock()
+        mock_request.return_value = mock_resp
+
+        self.env["pulseway.device"].cron_sync_devices()
+        devices = self.env["pulseway.device"].search(
+            [("pulseway_id", "=", "dup-001")]
+        )
+        self.assertEqual(len(devices), 1)
+        self.assertEqual(devices.name, "Second")
 
     # ------------------------------------------------------------------
     # Actions

@@ -6,7 +6,7 @@
         <field name="inherit_id" ref="base.res_config_settings_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
-                <app data-string="Pulseway RMM" string="Pulseway RMM">
+                <app string="Pulseway RMM" name="pulseway_rmm">
                     <block title="API Connection">
                         <setting string="Pulseway API Credentials"
                                  help="Enter your Pulseway REST API v3 credentials. Create tokens in Pulseway at Administration > Configuration > API Access.">

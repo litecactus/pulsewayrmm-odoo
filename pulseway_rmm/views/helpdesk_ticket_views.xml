@@ -18,7 +18,8 @@
                         string="Refresh Device"
                         type="object"
                         icon="fa-refresh"
-                        invisible="not pulseway_device_id"/>
+                        invisible="not pulseway_device_id"
+                        groups="pulseway_rmm.group_pulseway_user"/>
             </xpath>
             <!-- Add device fields after the existing sheet content -->
             <xpath expr="//sheet" position="inside">
