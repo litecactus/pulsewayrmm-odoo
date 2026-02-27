@@ -120,7 +120,10 @@ class PulsewayDevice(models.Model):
         if not self.env.su and not self.env.user.has_group(
             "pulseway_rmm.group_pulseway_user"
         ):
-            raise self.env["ir.rule"]._make_access_error("read", self)
+            from odoo.exceptions import AccessError
+            raise AccessError(
+                _("You need the 'Pulseway User' role to perform this action.")
+            )
 
     # ------------------------------------------------------------------
     # Sync logic

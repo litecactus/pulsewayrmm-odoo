@@ -12,7 +12,7 @@
     """,
     "author": "Custom",
     "license": "LGPL-3",
-    "depends": ["helpdesk", "mail"],
+    "depends": ["helpdesk", "mail", "discuss"],
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",
