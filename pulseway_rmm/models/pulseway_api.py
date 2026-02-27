@@ -55,11 +55,13 @@ class PulsewayApi(models.AbstractModel):
         """
         base_url, token_id, token_secret, _webapp_url = self._get_credentials()
         url = f"{base_url}/{endpoint.lstrip('/')}"
+        headers = {"Content-Type": "application/json", "Accept": "*/*"}
         try:
             resp = requests.request(
                 method,
                 url,
                 auth=(token_id, token_secret),
+                headers=headers,
                 timeout=TIMEOUT,
                 **kwargs,
             )
@@ -109,9 +111,7 @@ class PulsewayApi(models.AbstractModel):
         Hits the same /devices endpoint used by sync so a successful test
         guarantees that device synchronisation will work.
         """
-        self._request(
-            "GET", "/devices", params={"$top": 1, "$skip": 0, "$count": "true"},
-        )
+        self._request("GET", "/devices", params={"$top": 1})
         return True
 
     @api.model

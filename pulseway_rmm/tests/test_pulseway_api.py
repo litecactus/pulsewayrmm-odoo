@@ -97,8 +97,9 @@ class TestPulsewayApi(TransactionCase):
             "GET",
             "https://api.pulseway.com/v3/devices",
             auth=("test-token-id", "test-token-secret"),
+            headers={"Content-Type": "application/json", "Accept": "*/*"},
             timeout=30,
-            params={"$top": 1, "$skip": 0, "$count": "true"},
+            params={"$top": 1},
         )
 
     @patch("odoo.addons.pulseway_rmm.models.pulseway_api.requests.request")
