@@ -106,11 +106,12 @@ class PulsewayApi(models.AbstractModel):
         """Verify that the stored credentials are valid.
 
         Returns ``True`` on success; raises ``UserError`` on failure.
-        Uses the /systems endpoint (with $top=1 to minimise payload) because
-        it is the most universally available v3 endpoint across Pulseway
-        cloud and self-hosted deployments.
+        Hits the same /devices endpoint used by sync so a successful test
+        guarantees that device synchronisation will work.
         """
-        self._request("GET", "/systems", params={"$top": 1})
+        self._request(
+            "GET", "/devices", params={"$top": 1, "$skip": 0, "$count": "true"},
+        )
         return True
 
     @api.model

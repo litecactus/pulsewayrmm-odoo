@@ -95,10 +95,10 @@ class TestPulsewayApi(TransactionCase):
         self.assertTrue(result)
         mock_request.assert_called_once_with(
             "GET",
-            "https://api.pulseway.com/v3/systems",
+            "https://api.pulseway.com/v3/devices",
             auth=("test-token-id", "test-token-secret"),
             timeout=30,
-            params={"$top": 1},
+            params={"$top": 1, "$skip": 0, "$count": "true"},
         )
 
     @patch("odoo.addons.pulseway_rmm.models.pulseway_api.requests.request")
