@@ -66,6 +66,10 @@ class TestPulsewayDevice(TransactionCase):
             "https://my.pulseway.com/#!/devices/test-id-001",
         )
 
+    def test_remote_control_url_encodes_special_chars(self):
+        device = self._create_device(pulseway_id="id with spaces/slashes")
+        self.assertIn("id%20with%20spaces%2Fslashes", device.remote_control_url)
+
     def test_remote_control_url_without_webapp(self):
         self.env["ir.config_parameter"].sudo().set_param(
             "pulseway_rmm.webapp_url", ""
@@ -104,6 +108,11 @@ class TestPulsewayDevice(TransactionCase):
         self.assertEqual(device.name, "WORKSTATION-01")
         self.assertEqual(device.ip_address, "192.168.1.100")
         self.assertTrue(device.online)
+
+    def test_create_from_api_missing_identifier(self):
+        """Devices without Identifier are skipped."""
+        result = self.env["pulseway.device"]._create_from_api({"Name": "No ID"})
+        self.assertFalse(result)
 
     def test_update_from_api(self):
         device = self._create_device(pulseway_id="aaaa-bbbb-cccc-dddd")

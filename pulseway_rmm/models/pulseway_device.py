@@ -2,8 +2,10 @@
 
 import logging
 from datetime import datetime, timezone
+from urllib.parse import quote
 
 from odoo import _, api, fields, models
+from odoo.exceptions import AccessError, UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -62,8 +64,17 @@ class PulsewayDevice(models.Model):
 
     @api.depends("ticket_ids")
     def _compute_ticket_count(self):
+        if not self.ids:
+            self.ticket_count = 0
+            return
+        ticket_data = self.env["helpdesk.ticket"]._read_group(
+            domain=[("pulseway_device_id", "in", self.ids)],
+            groupby=["pulseway_device_id"],
+            aggregates=["__count"],
+        )
+        counts = {device.id: count for device, count in ticket_data}
         for rec in self:
-            rec.ticket_count = len(rec.ticket_ids)
+            rec.ticket_count = counts.get(rec.id, 0)
 
     @api.depends("pulseway_id")
     def _compute_remote_control_url(self):
@@ -71,7 +82,8 @@ class PulsewayDevice(models.Model):
         webapp_url = (ICP.get_param("pulseway_rmm.webapp_url") or "").rstrip("/")
         for rec in self:
             if webapp_url and rec.pulseway_id:
-                rec.remote_control_url = f"{webapp_url}/#!/devices/{rec.pulseway_id}"
+                safe_id = quote(str(rec.pulseway_id), safe="")
+                rec.remote_control_url = f"{webapp_url}/#!/devices/{safe_id}"
             else:
                 rec.remote_control_url = False
 
@@ -120,7 +132,9 @@ class PulsewayDevice(models.Model):
         if not self.env.su and not self.env.user.has_group(
             "pulseway_rmm.group_pulseway_user"
         ):
-            raise self.env["ir.rule"]._make_access_error("read", self)
+            raise AccessError(
+                _("You need the Pulseway User role to perform this action.")
+            )
 
     # ------------------------------------------------------------------
     # Sync logic
@@ -132,7 +146,7 @@ class PulsewayDevice(models.Model):
         api_client = self.env["pulseway.api"]
         try:
             raw_devices = api_client.get_devices()
-        except Exception:
+        except (UserError, ConnectionError, OSError):
             _logger.exception("Pulseway device sync failed: could not fetch devices")
             return
 
@@ -199,8 +213,12 @@ class PulsewayDevice(models.Model):
     @api.model
     def _create_from_api(self, raw):
         """Create a new device record from API response dict."""
+        identifier = raw.get("Identifier")
+        if not identifier:
+            _logger.warning("Pulseway sync: skipping device with no Identifier")
+            return self.browse()
         vals = self._prepare_vals(raw)
-        vals["pulseway_id"] = raw.get("Identifier")
+        vals["pulseway_id"] = identifier
         return self.create(vals)
 
     @api.model
