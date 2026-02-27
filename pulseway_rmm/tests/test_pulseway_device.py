@@ -52,7 +52,7 @@ class TestPulsewayDevice(TransactionCase):
 
     def test_unique_pulseway_id(self):
         self._create_device(pulseway_id="unique-constraint-test")
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception), self.env.cr.savepoint():
             self._create_device(pulseway_id="unique-constraint-test")
 
     # ------------------------------------------------------------------
