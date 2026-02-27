@@ -44,20 +44,17 @@ class PulsewayDevice(models.Model):
         "pulseway_device_id",
         string="Tickets",
     )
-    ticket_count = fields.Integer(compute="_compute_ticket_count", string="Tickets")
+    ticket_count = fields.Integer(compute="_compute_ticket_count", string="Ticket Count")
 
     remote_control_url = fields.Char(
         compute="_compute_remote_control_url",
         string="Remote Control URL",
     )
 
-    _sql_constraints = [
-        (
-            "pulseway_id_unique",
-            "UNIQUE(pulseway_id)",
-            "A device with this Pulseway ID already exists.",
-        ),
-    ]
+    pulseway_id_unique = models.Constraint(
+        "UNIQUE(pulseway_id)",
+        "A device with this Pulseway ID already exists.",
+    )
 
     # ------------------------------------------------------------------
     # Computed
