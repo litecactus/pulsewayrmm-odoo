@@ -95,7 +95,7 @@ class TestPulsewayApi(TransactionCase):
         self.assertTrue(result)
         mock_request.assert_called_once_with(
             "GET",
-            "https://api.pulseway.com/v3/devices",
+            "https://api.pulseway.com/v3/systems",
             auth=("test-token-id", "test-token-secret"),
             timeout=30,
             params={"$top": 1},

@@ -70,13 +70,20 @@ class PulsewayApi(models.AbstractModel):
             )
         except requests.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else "N/A"
-            raise UserError(
-                _(
-                    "Pulseway API error (HTTP %s). "
-                    "Check credentials and API URL.",
-                    status,
-                )
+            detail = ""
+            if exc.response is not None:
+                try:
+                    detail = exc.response.text[:200]
+                except Exception:
+                    pass
+            msg = _(
+                "Pulseway API error (HTTP %s). "
+                "Check credentials and API URL.",
+                status,
             )
+            if detail:
+                msg += f"\n\nAPI response: {detail}"
+            raise UserError(msg)
         except requests.Timeout:
             raise UserError(
                 _("Pulseway API request timed out after %s seconds.", TIMEOUT)
@@ -99,10 +106,11 @@ class PulsewayApi(models.AbstractModel):
         """Verify that the stored credentials are valid.
 
         Returns ``True`` on success; raises ``UserError`` on failure.
-        Uses the /devices endpoint (with $top=1 to minimise payload) because
-        /environment is not available on all Pulseway deployments.
+        Uses the /systems endpoint (with $top=1 to minimise payload) because
+        it is the most universally available v3 endpoint across Pulseway
+        cloud and self-hosted deployments.
         """
-        self._request("GET", "/devices", params={"$top": 1})
+        self._request("GET", "/systems", params={"$top": 1})
         return True
 
     @api.model
