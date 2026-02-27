@@ -51,9 +51,9 @@ class TestPulsewayDevice(TransactionCase):
         self.assertEqual(device.pulseway_id, "test-id-001")
 
     def test_unique_pulseway_id(self):
-        self._create_device()
+        self._create_device(pulseway_id="unique-constraint-test")
         with self.assertRaises(Exception):
-            self._create_device()
+            self._create_device(pulseway_id="unique-constraint-test")
 
     # ------------------------------------------------------------------
     # Computed fields
