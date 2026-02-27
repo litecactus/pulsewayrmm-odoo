@@ -99,8 +99,10 @@ class PulsewayApi(models.AbstractModel):
         """Verify that the stored credentials are valid.
 
         Returns ``True`` on success; raises ``UserError`` on failure.
+        Uses the /devices endpoint (with $top=1 to minimise payload) because
+        /environment is not available on all Pulseway deployments.
         """
-        self._request("GET", "/environment")
+        self._request("GET", "/devices", params={"$top": 1})
         return True
 
     @api.model

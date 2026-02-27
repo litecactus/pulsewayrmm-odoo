@@ -86,13 +86,20 @@ class TestPulsewayApi(TransactionCase):
     def test_test_connection(self, mock_request):
         mock_resp = MagicMock()
         mock_resp.status_code = 200
-        mock_resp.content = b'{"Data": {}}'
-        mock_resp.json.return_value = {"Data": {}}
+        mock_resp.content = b'{"Data": []}'
+        mock_resp.json.return_value = {"Data": []}
         mock_resp.raise_for_status = MagicMock()
         mock_request.return_value = mock_resp
 
         result = self.api.test_connection()
         self.assertTrue(result)
+        mock_request.assert_called_once_with(
+            "GET",
+            "https://api.pulseway.com/v3/devices",
+            auth=("test-token-id", "test-token-secret"),
+            timeout=30,
+            params={"$top": 1},
+        )
 
     @patch("odoo.addons.pulseway_rmm.models.pulseway_api.requests.request")
     def test_get_devices_paginates(self, mock_request):
