@@ -51,7 +51,7 @@ class PulsewayDevice(models.Model):
         string="Remote Control URL",
     )
 
-    pulseway_id_unique = models.Constraint(
+    _pulseway_id_unique = models.Constraint(
         "UNIQUE(pulseway_id)",
         "A device with this Pulseway ID already exists.",
     )
