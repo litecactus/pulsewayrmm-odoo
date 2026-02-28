@@ -14,16 +14,16 @@ class TestPulsewayApi(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         ICP = cls.env["ir.config_parameter"].sudo()
-        ICP.set_str("pulseway_rmm.api_url", "https://api.pulseway.com/v3")
-        ICP.set_str("pulseway_rmm.token_id", "test-token-id")
-        ICP.set_str("pulseway_rmm.token_secret", "test-token-secret")
-        ICP.set_str("pulseway_rmm.webapp_url", "https://my.pulseway.com")
+        (getattr(ICP, "set_str", None) or ICP.set_param)("pulseway_rmm.api_url", "https://api.pulseway.com/v3")
+        (getattr(ICP, "set_str", None) or ICP.set_param)("pulseway_rmm.token_id", "test-token-id")
+        (getattr(ICP, "set_str", None) or ICP.set_param)("pulseway_rmm.token_secret", "test-token-secret")
+        (getattr(ICP, "set_str", None) or ICP.set_param)("pulseway_rmm.webapp_url", "https://my.pulseway.com")
         cls.api = cls.env["pulseway.api"]
 
     def test_get_credentials_raises_when_missing(self):
-        self.env["ir.config_parameter"].sudo().set_str(
-            "pulseway_rmm.token_id", ""
-        )
+        ICP = self.env["ir.config_parameter"].sudo()
+        _set = getattr(ICP, "set_str", None) or ICP.set_param
+        _set("pulseway_rmm.token_id", "")
         with self.assertRaises(UserError):
             self.api._get_credentials()
 

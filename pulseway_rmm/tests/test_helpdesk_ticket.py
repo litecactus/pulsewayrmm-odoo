@@ -13,12 +13,14 @@ class TestHelpdeskTicketPulseway(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         ICP = cls.env["ir.config_parameter"].sudo()
-        ICP.set_str("pulseway_rmm.api_url", "https://api.pulseway.com/v3")
-        ICP.set_str("pulseway_rmm.token_id", "test-token-id")
-        ICP.set_str("pulseway_rmm.token_secret", "test-token-secret")
-        ICP.set_str("pulseway_rmm.webapp_url", "https://my.pulseway.com")
+        (getattr(ICP, "set_str", None) or ICP.set_param)("pulseway_rmm.api_url", "https://api.pulseway.com/v3")
+        (getattr(ICP, "set_str", None) or ICP.set_param)("pulseway_rmm.token_id", "test-token-id")
+        (getattr(ICP, "set_str", None) or ICP.set_param)("pulseway_rmm.token_secret", "test-token-secret")
+        (getattr(ICP, "set_str", None) or ICP.set_param)("pulseway_rmm.webapp_url", "https://my.pulseway.com")
 
-        cls.env.user.group_ids += cls.env.ref("pulseway_rmm.group_pulseway_user")
+        # group_ids in Odoo 19+, groups_id in older versions
+        grp_field = "group_ids" if hasattr(cls.env.user, "group_ids") else "groups_id"
+        cls.env.user[grp_field] += cls.env.ref("pulseway_rmm.group_pulseway_user")
 
         cls.device = cls.env["pulseway.device"].create(
             {

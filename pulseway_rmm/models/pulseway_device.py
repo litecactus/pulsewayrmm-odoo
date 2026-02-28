@@ -94,7 +94,8 @@ class PulsewayDevice(models.Model):
     @api.depends("pulseway_id", "external_url")
     def _compute_remote_control_url(self):
         ICP = self.env["ir.config_parameter"].sudo()
-        webapp_url = (ICP.get_str("pulseway_rmm.webapp_url") or "").rstrip("/")
+        get = getattr(ICP, "get_str", None) or ICP.get_param
+        webapp_url = (get("pulseway_rmm.webapp_url") or "").rstrip("/")
         for rec in self:
             if rec.external_url:
                 # ExternalUrl from API ends with /details — replace with /remote-control

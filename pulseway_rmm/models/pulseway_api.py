@@ -33,10 +33,11 @@ class PulsewayApi(models.AbstractModel):
     def _get_credentials(self):
         """Return (base_url, token_id, token_secret, webapp_url) from config."""
         ICP = self.env["ir.config_parameter"].sudo()
-        base_url = (ICP.get_str("pulseway_rmm.api_url") or "").rstrip("/")
-        token_id = ICP.get_str("pulseway_rmm.token_id") or ""
-        token_secret = ICP.get_str("pulseway_rmm.token_secret") or ""
-        webapp_url = (ICP.get_str("pulseway_rmm.webapp_url") or "").rstrip("/")
+        get = getattr(ICP, "get_str", None) or ICP.get_param
+        base_url = (get("pulseway_rmm.api_url") or "").rstrip("/")
+        token_id = get("pulseway_rmm.token_id") or ""
+        token_secret = get("pulseway_rmm.token_secret") or ""
+        webapp_url = (get("pulseway_rmm.webapp_url") or "").rstrip("/")
         if not all([base_url, token_id, token_secret]):
             raise UserError(
                 _(
