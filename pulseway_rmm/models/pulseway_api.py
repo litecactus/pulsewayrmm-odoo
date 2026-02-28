@@ -152,6 +152,13 @@ class PulsewayApi(models.AbstractModel):
         return data.get("Data") or {}
 
     @api.model
+    def get_asset(self, device_id):
+        """Fetch asset details for a device (rich data: OS, IPs, user, etc.)."""
+        safe_id = quote(str(device_id), safe="")
+        data = self._request("GET", f"/assets/{safe_id}")
+        return data.get("Data") or {}
+
+    @api.model
     def get_device_notifications(self, device_id):
         """Fetch recent notifications for a device."""
         safe_id = quote(str(device_id), safe="")

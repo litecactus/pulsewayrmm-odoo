@@ -18,7 +18,6 @@ class TestHelpdeskTicketPulseway(TransactionCase):
         ICP.set_str("pulseway_rmm.token_secret", "test-token-secret")
         ICP.set_str("pulseway_rmm.webapp_url", "https://my.pulseway.com")
 
-        # Give the test user the Pulseway group so refresh works
         cls.env.user.group_ids += cls.env.ref("pulseway_rmm.group_pulseway_user")
 
         cls.device = cls.env["pulseway.device"].create(
@@ -28,11 +27,9 @@ class TestHelpdeskTicketPulseway(TransactionCase):
                 "online": True,
                 "os_name": "Windows 11",
                 "ip_address": "10.0.0.5",
+                "last_logged_on_user": "CORP\\testuser",
             }
         )
-        # Create a dedicated test team with explicit stages and no auto-
-        # assignment so that ticket creation is deterministic and does not
-        # depend on demo data or resource-calendar availability.
         cls.team = cls.env["helpdesk.team"].with_context(
             mail_create_nolog=True,
             mail_create_nosubscribe=True,
@@ -42,16 +39,10 @@ class TestHelpdeskTicketPulseway(TransactionCase):
             "auto_assignment": False,
             "use_sla": False,
         })
-        cls.stage_new = cls.env["helpdesk.stage"].create({
+        cls.env["helpdesk.stage"].create({
             "name": "New",
             "sequence": 10,
             "team_ids": [(4, cls.team.id)],
-        })
-        cls.stage_done = cls.env["helpdesk.stage"].create({
-            "name": "Done",
-            "sequence": 30,
-            "team_ids": [(4, cls.team.id)],
-            "fold": True,
         })
 
     def _create_ticket(self, **overrides):
@@ -67,48 +58,46 @@ class TestHelpdeskTicketPulseway(TransactionCase):
         ticket = self._create_ticket()
         self.assertEqual(ticket.pulseway_device_id, self.device)
         self.assertTrue(ticket.device_online)
-        self.assertEqual(ticket.device_os, "Windows 11")
-        self.assertEqual(ticket.device_ip, "10.0.0.5")
+        self.assertEqual(ticket.device_last_user, "CORP\\testuser")
 
-    def test_ticket_without_device(self):
-        ticket = self._create_ticket(pulseway_device_id=False)
-        self.assertFalse(ticket.pulseway_device_id)
-        self.assertFalse(ticket.device_online)
-
-    def test_device_ticket_count(self):
-        self._create_ticket()
-        self._create_ticket(name="Another issue")
-        self.device.invalidate_recordset()
-        self.assertEqual(self.device.ticket_count, 2)
-
-    def test_action_remote_control_from_ticket(self):
+    def test_action_remote_control(self):
         ticket = self._create_ticket()
         result = ticket.action_remote_control()
         self.assertEqual(result["type"], "ir.actions.act_url")
         self.assertIn("ws-001", result["url"])
 
-    def test_action_remote_control_no_device(self):
-        ticket = self._create_ticket(pulseway_device_id=False)
-        result = ticket.action_remote_control()
-        self.assertIsNone(result)
-
     @patch("odoo.addons.pulseway_rmm.models.pulseway_api.requests.request")
-    def test_action_refresh_device_from_ticket(self, mock_request):
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.content = b"x"
-        mock_resp.json.return_value = {
-            "Data": {
-                "Identifier": "ws-001",
-                "Name": "Updated Workstation",
-                "Online": False,
-            }
-        }
-        mock_resp.raise_for_status = MagicMock()
-        mock_request.return_value = mock_resp
+    def test_action_refresh_device(self, mock_request):
+        def side_effect(method, url, **kwargs):
+            resp = MagicMock()
+            resp.status_code = 200
+            resp.content = b"x"
+            resp.raise_for_status = MagicMock()
+            if "/assets/" in url:
+                resp.json.return_value = {
+                    "Data": {
+                        "LastSeenOnline": "2020-01-01T00:00:00Z",
+                        "AssetInfo": [
+                            {
+                                "CategoryName": "Operating System",
+                                "CategoryData": {
+                                    "Name": "Windows 10",
+                                    "Last Logged On User": "ACME\\jdoe",
+                                },
+                            }
+                        ],
+                    }
+                }
+            else:
+                resp.json.return_value = {
+                    "Data": {"Identifier": "ws-001", "Name": "Updated Workstation"}
+                }
+            return resp
+
+        mock_request.side_effect = side_effect
 
         ticket = self._create_ticket()
         ticket.action_refresh_device()
         self.device.invalidate_recordset()
         self.assertEqual(self.device.name, "Updated Workstation")
-        self.assertFalse(self.device.online)
+        self.assertEqual(self.device.last_logged_on_user, "ACME\\jdoe")

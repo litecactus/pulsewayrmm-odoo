@@ -7,9 +7,10 @@
         <field name="arch" type="xml">
             <list>
                 <field name="name"/>
+                <field name="last_logged_on_user" string="User"/>
                 <field name="os_name"/>
                 <field name="ip_address"/>
-                <field name="group_name"/>
+                <field name="site_name"/>
                 <field name="organization_name"/>
                 <field name="online" widget="boolean_toggle" readonly="1"/>
                 <field name="last_seen"/>
@@ -56,10 +57,12 @@
                     <group>
                         <group string="Device Info">
                             <field name="pulseway_id" readonly="1"/>
+                            <field name="last_logged_on_user"/>
                             <field name="os_name"/>
                             <field name="os_version"/>
                             <field name="ip_address"/>
                             <field name="remote_address"/>
+                            <field name="device_type"/>
                         </group>
                         <group string="Organization">
                             <field name="organization_name"/>
@@ -83,8 +86,10 @@
         <field name="arch" type="xml">
             <search>
                 <field name="name"/>
+                <field name="last_logged_on_user" string="User"/>
                 <field name="ip_address"/>
                 <field name="os_name"/>
+                <field name="site_name"/>
                 <field name="group_name"/>
                 <field name="organization_name"/>
                 <filter name="online" string="Online" domain="[('online', '=', True)]"/>

@@ -21,11 +21,13 @@
                         invisible="not pulseway_device_id"
                         groups="pulseway_rmm.group_pulseway_user"/>
             </xpath>
-            <!-- Add device fields after the existing sheet content -->
-            <xpath expr="//sheet" position="inside">
+            <!-- Add device fields above the description notebook -->
+            <xpath expr="//notebook" position="before">
                 <group string="Pulseway Device">
                     <group>
                         <field name="pulseway_device_id"/>
+                        <field name="device_last_user"
+                               invisible="not pulseway_device_id"/>
                         <field name="device_online" widget="boolean_toggle"
                                readonly="1"
                                invisible="not pulseway_device_id"/>
