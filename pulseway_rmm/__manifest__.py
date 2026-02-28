@@ -1,6 +1,6 @@
 {
     "name": "Pulseway RMM Integration",
-    "version": "19.0.1.0.0",
+    "version": "1.0.0",
     "category": "Services/Helpdesk",
     "summary": "Link Pulseway RMM devices to helpdesk tickets with remote control",
     "description": """
@@ -12,7 +12,7 @@
     """,
     "author": "Custom",
     "license": "LGPL-3",
-    "depends": ["helpdesk", "mail", "discuss"],
+    "depends": ["helpdesk"],
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",

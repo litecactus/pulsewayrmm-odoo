@@ -25,6 +25,11 @@ class HelpdeskTicket(models.Model):
         related="pulseway_device_id.ip_address",
         string="Device IP",
     )
+    device_last_user = fields.Char(
+        related="pulseway_device_id.last_logged_on_user",
+        string="Device User",
+        store=True,
+    )
 
     def action_remote_control(self):
         """Open Pulseway remote control for the linked device."""

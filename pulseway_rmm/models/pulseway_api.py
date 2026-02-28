@@ -33,10 +33,10 @@ class PulsewayApi(models.AbstractModel):
     def _get_credentials(self):
         """Return (base_url, token_id, token_secret, webapp_url) from config."""
         ICP = self.env["ir.config_parameter"].sudo()
-        base_url = (ICP.get_param("pulseway_rmm.api_url") or "").rstrip("/")
-        token_id = ICP.get_param("pulseway_rmm.token_id") or ""
-        token_secret = ICP.get_param("pulseway_rmm.token_secret") or ""
-        webapp_url = (ICP.get_param("pulseway_rmm.webapp_url") or "").rstrip("/")
+        base_url = (ICP.get_str("pulseway_rmm.api_url") or "").rstrip("/")
+        token_id = ICP.get_str("pulseway_rmm.token_id") or ""
+        token_secret = ICP.get_str("pulseway_rmm.token_secret") or ""
+        webapp_url = (ICP.get_str("pulseway_rmm.webapp_url") or "").rstrip("/")
         if not all([base_url, token_id, token_secret]):
             raise UserError(
                 _(
@@ -55,11 +55,13 @@ class PulsewayApi(models.AbstractModel):
         """
         base_url, token_id, token_secret, _webapp_url = self._get_credentials()
         url = f"{base_url}/{endpoint.lstrip('/')}"
+        headers = {"Content-Type": "application/json", "Accept": "*/*"}
         try:
             resp = requests.request(
                 method,
                 url,
                 auth=(token_id, token_secret),
+                headers=headers,
                 timeout=TIMEOUT,
                 **kwargs,
             )
@@ -70,13 +72,20 @@ class PulsewayApi(models.AbstractModel):
             )
         except requests.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else "N/A"
-            raise UserError(
-                _(
-                    "Pulseway API error (HTTP %s). "
-                    "Check credentials and API URL.",
-                    status,
-                )
+            detail = ""
+            if exc.response is not None:
+                try:
+                    detail = exc.response.text[:200]
+                except Exception:
+                    pass
+            msg = _(
+                "Pulseway API error (HTTP %s). "
+                "Check credentials and API URL.",
+                status,
             )
+            if detail:
+                msg += f"\n\nAPI response: {detail}"
+            raise UserError(msg)
         except requests.Timeout:
             raise UserError(
                 _("Pulseway API request timed out after %s seconds.", TIMEOUT)
@@ -99,8 +108,10 @@ class PulsewayApi(models.AbstractModel):
         """Verify that the stored credentials are valid.
 
         Returns ``True`` on success; raises ``UserError`` on failure.
+        Hits the same /devices endpoint used by sync so a successful test
+        guarantees that device synchronisation will work.
         """
-        self._request("GET", "/environment")
+        self._request("GET", "/devices", params={"$top": 1})
         return True
 
     @api.model
@@ -138,6 +149,13 @@ class PulsewayApi(models.AbstractModel):
         """Fetch a single device by its Pulseway identifier."""
         safe_id = quote(str(device_id), safe="")
         data = self._request("GET", f"/devices/{safe_id}")
+        return data.get("Data") or {}
+
+    @api.model
+    def get_asset(self, device_id):
+        """Fetch asset details for a device (rich data: OS, IPs, user, etc.)."""
+        safe_id = quote(str(device_id), safe="")
+        data = self._request("GET", f"/assets/{safe_id}")
         return data.get("Data") or {}
 
     @api.model
